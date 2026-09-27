@@ -1,0 +1,34 @@
+name: Daily Check-in
+
+on:
+  schedule:
+    - cron: "0 1 * * *"
+  workflow_dispatch:
+
+jobs:
+  checkin:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Record check-in
+        run: |
+          mkdir -p checkin
+          TZ='Asia/Shanghai' date '+%Y-%m-%d %H:%M 打卡' >> checkin/log.txt
+          echo "累计打卡 $(wc -l < checkin/log.txt) 次"
+
+      - name: Commit and push
+        run: |
+          DAY=$(TZ='Asia/Shanghai' date +%F)
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add checkin/log.txt
+          if git diff --quiet --cached; then
+            echo "nothing to commit"
+          else
+            git commit -m "chore: daily check-in $DAY"
+            git push
+          fi
